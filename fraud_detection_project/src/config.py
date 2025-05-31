@@ -11,7 +11,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Placeholder for the dataset path.
 # User will need to provide the actual dataset and update this path.
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
-RAW_DATA_FILE = os.path.join(DATA_DIR, 'dummy_fraud_dataset.csv') # Example filename, user to confirm/update
+RAW_DATA_FILE = os.path.join(DATA_DIR, 'synthetic_fraud_dataset.csv') # Example filename, user to confirm/update
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, 'processed')
 TRAIN_DATA_FILE = os.path.join(PROCESSED_DATA_DIR, 'train.csv')
 TEST_DATA_FILE = os.path.join(PROCESSED_DATA_DIR, 'test.csv')
