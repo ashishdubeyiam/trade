@@ -60,6 +60,15 @@ def inspect_data(df):
     else:
         print(f"WARNING: Target column '{config.TARGET_COLUMN}' not found in dataframe.")
 
+    # Optional: Inspect timestamp column if it exists
+    if hasattr(config, 'TIMESTAMP_COLUMN') and config.TIMESTAMP_COLUMN in df.columns:
+        print(f"\n--- Timestamp Column ('{config.TIMESTAMP_COLUMN}') Inspection ---")
+        print(f"Data type: {df[config.TIMESTAMP_COLUMN].dtype}")
+        if len(df[config.TIMESTAMP_COLUMN].unique()) > 5:
+            print(f"First 5 unique values: {df[config.TIMESTAMP_COLUMN].unique()[:5]}")
+        else:
+            print(f"Unique values: {df[config.TIMESTAMP_COLUMN].unique()}")
+
 
 def handle_class_imbalance(df, target_column):
     """Handles class imbalance using undersampling as per the proposal."""
@@ -111,17 +120,42 @@ def preprocess_features(df, experiment_type='all_features'):
         print(f"Target column '{config.TARGET_COLUMN}' not found. Cannot proceed with feature processing.")
         return None, None
 
+    # --- Timestamp Feature Engineering ---
+    if hasattr(config, 'TIMESTAMP_COLUMN') and config.TIMESTAMP_COLUMN in X.columns:
+        print(f"Processing timestamp column: {config.TIMESTAMP_COLUMN}")
+        X[config.TIMESTAMP_COLUMN] = pd.to_datetime(X[config.TIMESTAMP_COLUMN], errors='coerce')
+
+        X['Hour_of_Day'] = X[config.TIMESTAMP_COLUMN].dt.hour
+        X['Day_of_Week'] = X[config.TIMESTAMP_COLUMN].dt.dayofweek
+        X['Month_of_Year'] = X[config.TIMESTAMP_COLUMN].dt.month
+
+        X = X.drop(columns=[config.TIMESTAMP_COLUMN])
+        print(f"Created time-based features: Hour_of_Day, Day_of_Week, Month_of_Year. Dropped {config.TIMESTAMP_COLUMN}.")
+    else:
+        print(f"Timestamp column '{getattr(config, 'TIMESTAMP_COLUMN', 'N/A')}' not found or not configured. Skipping time-based feature engineering.")
+
+    # --- Drop Specified Columns ---
+    if hasattr(config, 'COLUMNS_TO_DROP') and config.COLUMNS_TO_DROP:
+        print(f"Dropping specified columns: {config.COLUMNS_TO_DROP}")
+        X = X.drop(columns=config.COLUMNS_TO_DROP, errors='ignore')
+        print(f"Features after dropping specified columns: {X.columns.tolist()}")
+
+    # --- Experiment-Specific Feature Dropping ---
     if experiment_type == 'selected_features':
-        print(f"Dropping features for selected_features experiment: {config.FEATURES_TO_DROP_EXPERIMENT2}")
-        X = X.drop(columns=config.FEATURES_TO_DROP_EXPERIMENT2, errors='ignore')
-        print(f"Features after dropping: {X.columns.tolist()}")
+        if hasattr(config, 'FEATURES_TO_DROP_EXPERIMENT2') and config.FEATURES_TO_DROP_EXPERIMENT2:
+            print(f"Dropping features for selected_features experiment: {config.FEATURES_TO_DROP_EXPERIMENT2}")
+            X = X.drop(columns=config.FEATURES_TO_DROP_EXPERIMENT2, errors='ignore')
+            print(f"Features after dropping for experiment: {X.columns.tolist()}")
+        else:
+            print("No features configured to be dropped for 'selected_features' experiment or config attribute missing.")
 
-
+    # --- Identify Feature Types After Transformations ---
     numerical_features = X.select_dtypes(include=np.number).columns.tolist()
+    # Ensure categorical features from config are actually present in X after transformations
     categorical_features = [col for col in config.CATEGORICAL_FEATURES if col in X.columns]
 
-    print(f"Numerical features identified: {numerical_features}")
-    print(f"Categorical features identified: {categorical_features}")
+    print(f"Numerical features identified after transformations: {numerical_features}")
+    print(f"Categorical features identified after transformations (and present in X): {categorical_features}")
 
     preprocessor = ColumnTransformer(
         transformers=[

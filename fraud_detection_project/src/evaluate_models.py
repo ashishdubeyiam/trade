@@ -25,7 +25,7 @@ except ModuleNotFoundError:
         LOGISTIC_REGRESSION_MODEL_PATH = os.path.join(MODEL_DIR, 'logistic_regression_model.joblib')
         RANDOM_FOREST_MODEL_PATH = os.path.join(MODEL_DIR, 'random_forest_model.joblib')
         DECISION_TREE_MODEL_PATH = os.path.join(MODEL_DIR, 'decision_tree_model.joblib')
-         ANN_MODEL_PATH = os.path.join(MODEL_DIR, 'ann_model.h5') # Added for ANN
+        ANN_MODEL_PATH = os.path.join(MODEL_DIR, 'ann_model.h5') # Added for ANN
         TARGET_COLUMN = 'isFraud' # Ensure this matches your target column name
 
         # Create fallback directories if they don't exist

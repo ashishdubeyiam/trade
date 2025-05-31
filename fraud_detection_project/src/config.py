@@ -11,7 +11,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Placeholder for the dataset path.
 # User will need to provide the actual dataset and update this path.
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
-RAW_DATA_FILE = os.path.join(DATA_DIR, 'fraud_dataset.csv') # Example filename, user to confirm/update
+RAW_DATA_FILE = os.path.join(DATA_DIR, 'synthetic_fraud_dataset.csv') # Example filename, user to confirm/update
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, 'processed')
 TRAIN_DATA_FILE = os.path.join(PROCESSED_DATA_DIR, 'train.csv')
 TEST_DATA_FILE = os.path.join(PROCESSED_DATA_DIR, 'test.csv')
@@ -34,7 +34,9 @@ ANN_EPOCHS = 50
 ANN_BATCH_SIZE = 32
 
 # --- Feature Engineering ---
-CATEGORICAL_FEATURES = ['type'] # As per proposal, 'type' is a key categorical feature
+TIMESTAMP_COLUMN = 'Timestamp'
+COLUMNS_TO_DROP = ['Transaction_ID', 'User_ID']
+CATEGORICAL_FEATURES = ['Transaction_Type', 'Device_Type', 'Location', 'Merchant_Category', 'Card_Type', 'Authentication_Method', 'IP_Address_Flag', 'Previous_Fraudulent_Activity', 'Is_Weekend']
 FEATURES_TO_DROP_EXPERIMENT2 = ['nameOrig', 'nameDest'] # Features to drop for experiment 2
 
 # --- Evaluation ---
@@ -44,6 +46,8 @@ CONFUSION_MATRIX_DIR = os.path.join(RESULTS_DIR, 'confusion_matrices')
 
 # --- Other ---
 RANDOM_SEED = 42 # For reproducibility
+TARGET_COLUMN = 'Fraud_Label' # Added for clarity, was implicitly 'isFraud' in some scripts
+
 
 # Create directories if they don't exist
 os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
