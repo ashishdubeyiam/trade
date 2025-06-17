@@ -230,30 +230,43 @@ if __name__ == '__main__':
 
     # Create a dummy input CSV for testing (eur_usd_m5_master_data.csv)
     # This should now be raw data, as features are added internally.
-    num_rows_test = MAX_HOLDING_BARS + 100 # Enough for features and some labels
-    base_time = datetime.now(timezone.utc) - timedelta(minutes=5*num_rows_test)
-    test_data_payload = { # Renamed to avoid conflict with loaded_df later
-        'timestamp': pd.date_range(start=base_time, periods=num_rows_test, freq='5min', tz='UTC'),
-        'open': np.random.rand(num_rows_test) * 0.01 + 1.0700, # Forex prices
-        'volume': np.random.randint(10, 100, num_rows_test).astype(float) # Volume as float
-    }
-    _test_df = pd.DataFrame(test_data_payload) # Use temp name
-    _test_df['high'] = _test_df['open'] + np.random.rand(num_rows_test) * 0.0010
-    _test_df['low'] = _test_df['open'] - np.random.rand(num_rows_test) * 0.0010
-    _test_df['close'] = (_test_df['open'] + _test_df['high'] + _test_df['low']) / 3
-    _test_df['vwap'] = _test_df['close'] + (np.random.rand(num_rows_test) * 0.0002 - 0.0001)
 
-    # Ensure all base columns for feature engineering are present
-    # ATR_COL_NAME is NOT expected here, it will be generated.
+    created_dummy_input_for_testing = False
+    input_file_path = DEFAULT_INPUT_OHLCV_VWAP_M5_CSV
 
-    dummy_input_path = DEFAULT_INPUT_OHLCV_VWAP_M5_CSV # Use the new constant
-    _test_df.to_csv(dummy_input_path, index=False)
-    logger.info(f"Created dummy input M5 data file for testing: {dummy_input_path} with {len(_test_df)} rows.")
+    if not os.path.exists(input_file_path):
+        logger.info(f"Real input file '{input_file_path}' not found. Creating dummy for testing.")
+        num_rows_test = MAX_HOLDING_BARS + 100 # Enough for features and some labels
+        # Need timedelta for dummy data generation time
+        from datetime import timedelta
+        base_time = datetime.now(timezone.utc) - timedelta(minutes=5*num_rows_test)
+        test_data_payload = {
+            'timestamp': pd.date_range(start=base_time, periods=num_rows_test, freq='5min', tz='UTC'),
+            'open': np.random.rand(num_rows_test) * 0.01 + 1.0700,
+            'volume': np.random.randint(10, 100, num_rows_test).astype(float)
+        }
+        _test_df = pd.DataFrame(test_data_payload)
+        _test_df['high'] = _test_df['open'] + np.random.rand(num_rows_test) * 0.0010
+        _test_df['low'] = _test_df['open'] - np.random.rand(num_rows_test) * 0.0010
+        _test_df['close'] = (_test_df['open'] + _test_df['high'] + _test_df['low']) / 3
+        _test_df['vwap'] = _test_df['close'] + (np.random.rand(num_rows_test) * 0.0002 - 0.0001)
 
-    main()
+        _test_df.to_csv(input_file_path, index=False)
+        logger.info(f"Created dummy input M5 data file: {input_file_path} with {len(_test_df)} rows.")
+        created_dummy_input_for_testing = True
+    else:
+        logger.info(f"Using existing input file: {input_file_path}")
 
-    if os.path.exists(dummy_input_path):
-        os.remove(dummy_input_path)
-        logger.info(f"Removed dummy input M5 data file: {dummy_input_path}")
-    # Output file is not removed for inspection
-    logger.info(f"Test output (if any) saved to: {DEFAULT_OUTPUT_LABELED_M5_CSV}")
+    main() # Call the main processing function
+
+    if created_dummy_input_for_testing: # Only remove if dummy was created in this run
+        if os.path.exists(input_file_path):
+            try:
+                os.remove(input_file_path)
+                logger.info(f"Removed dummy input M5 data file used for this test run: {input_file_path}")
+            except Exception as e_rem:
+                logger.error(f"Error removing dummy input file {input_file_path}: {e_rem}", exc_info=True)
+        else:
+            logger.warning(f"Tried to remove dummy input {input_file_path}, but it was not found (main() might have failed or it was already removed).")
+
+    logger.info(f"Script finished. Labeled output (if any) saved to: {DEFAULT_OUTPUT_LABELED_M5_CSV}")
