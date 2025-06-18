@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; text-align: center; }
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        .metrics-section { margin-bottom: 30px; }
+        .cm-image { display: block; margin: 10px auto; max-width: 400px; border: 1px solid #ddd; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: block; text-align: center; margin-top: 20px; }
+        pre { text-align: left; background-color: #eee; padding: 10px; border-radius: 3px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fraud Detection Pipeline Results</h1>
+
+        {% if error_message %}
+            <div style="color: red; background-color: #fdd; padding: 10px; border-radius: 5px; text-align: center;">
+                <h2>Error Processing File '{{ filename }}'</h2>
+                <p>{{ error_message }}</p>
+                {% if stderr_details %}
+                    <h3>Error Details:</h3>
+                    <pre>{{ stderr_details }}</pre>
+                {% endif %}
+            </div>
+        {% elif metrics_data %}
+            <h2 style="text-align:center;">Results for file: {{ filename }}</h2>
+            {% for model_key, metrics in metrics_data.items() %}
+            <div class="metrics-section">
+                <!-- Displaying the model key from JSON, which might include experiment type -->
+                <h2>Metrics for: {{ model_key }}</h2>
+                <table>
+                    <tr><th>Metric</th><th>Value</th></tr>
+                    <tr><td>Accuracy</td><td>{{ metrics.accuracy | round(4) if metrics.accuracy is not none else 'N/A' }}</td></tr>
+                    <tr><td>Precision</td><td>{{ metrics.precision | round(4) if metrics.precision is not none else 'N/A' }}</td></tr>
+                    <tr><td>Recall</td><td>{{ metrics.recall | round(4) if metrics.recall is not none else 'N/A' }}</td></tr>
+                    <tr><td>F1-Score</td><td>{{ metrics.f1_score | round(4) if metrics.f1_score is not none else 'N/A' }}</td></tr>
+                    <tr><td>ROC-AUC</td><td>{{ metrics.roc_auc | round(4) if metrics.roc_auc is not none else 'N/A' }}</td></tr>
+                    <tr><td>True Negatives (TN)</td><td>{{ metrics.tn if metrics.tn is not none else 'N/A' }}</td></tr>
+                    <tr><td>False Positives (FP)</td><td>{{ metrics.fp if metrics.fp is not none else 'N/A' }}</td></tr>
+                    <tr><td>False Negatives (FN)</td><td>{{ metrics.fn if metrics.fn is not none else 'N/A' }}</td></tr>
+                    <tr><td>True Positives (TP)</td><td>{{ metrics.tp if metrics.tp is not none else 'N/A' }}</td></tr>
+                    <tr><td>Specificity</td><td>{{ metrics.specificity | round(4) if metrics.specificity is not none else 'N/A' }}</td></tr>
+                    <tr><td>Geometric Mean</td><td>{{ metrics.geometric_mean | round(4) if metrics.geometric_mean is not none else 'N/A' }}</td></tr>
+                </table>
+
+                <!-- Constructing image name based on the model_key from JSON -->
+                {% set model_name_part = model_key.split('_all_features')[0] if '_all_features' in model_key else model_key %}
+                {% set cm_image_filename = model_name_part.lower().replace(' ', '_') + '_cm.png' %}
+                {% set cm_image_path_display = 'results/confusion_matrices/' + cm_image_filename %}
+
+                <p>Confusion Matrix plot saved as: <strong>{{ cm_image_path_display }}</strong></p>
+                <p style="text-align:center; font-style:italic;">(To view images, check the 'fraud_detection_project/results/confusion_matrices/' directory within your project. Direct image display in this UI is a future enhancement.)</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No metrics data available to display for file '{{ filename }}'. The pipeline might have run, but results could not be loaded or were not generated.</p>
+        {% endif %}
+
+        <div class="back-link">
+            <a href="{{ url_for('index') }}">Upload Another File</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -36,7 +36,7 @@ except ModuleNotFoundError as e:
             os.makedirs(RESULTS_DIR, exist_ok=True) # Ensure results dir itself
 
 
-def run_pipeline(experiment_type='all_features'):
+def run_pipeline(experiment_type='all_features', input_csv_path=None):
     """
     Runs the full pipeline:
     1. Load and preprocess data for the specified experiment type.
@@ -47,8 +47,15 @@ def run_pipeline(experiment_type='all_features'):
 
     # --- 1. Data Preprocessing ---
     print("\n--- Step 1: Data Preprocessing ---")
-    # Ensure data_preprocessing uses its own config for paths initially
-    raw_df = data_preprocessing.load_data(config.RAW_DATA_FILE)
+
+    current_data_file = input_csv_path if input_csv_path else config.RAW_DATA_FILE
+    if not current_data_file or not os.path.exists(current_data_file):
+        print(f"ERROR: Data file not found at specified path: {current_data_file}")
+        print("Please ensure the file exists, either via --input-file argument or RAW_DATA_FILE in config.py.")
+        return # Or raise an error
+    print(f"Attempting to load data from: {current_data_file}")
+    raw_df = data_preprocessing.load_data(current_data_file)
+
     if raw_df is None:
         print("Halting pipeline: Raw data could not be loaded.")
         return
@@ -144,24 +151,32 @@ if __name__ == '__main__':
         default='all_features',
         help="Type of experiment to run: 'all_features' or 'selected_features' (based on proposal's Experiment 1 and 2)."
     )
+    parser.add_argument(
+        '--input-file',
+        type=str,
+        default=None,
+        help="Path to the input CSV data file (overrides config.RAW_DATA_FILE)."
+    )
     args = parser.parse_args()
 
-    # Check if data file exists before running
-    # This check should ideally use the config from the imported module, not the fallback.
-    # The fallback config within main.py is only for extreme cases where module imports fail.
-    try:
-        data_file_to_check = config.RAW_DATA_FILE
-    except NameError: # config module itself might not have been imported
-        # Use the fallback path for the check if config module failed to load
-        print("Warning: config module not loaded, using fallback path for raw data check.")
-        data_file_to_check = '../data/fraud_dataset.csv' # Fallback path
+    # Determine data file path: command-line arg > config default
+    # The actual loading and detailed error for not found is handled in run_pipeline now.
+    # This pre-check is just to guide the user if they run main.py directly.
+    data_file_to_run = args.input_file if args.input_file else config.RAW_DATA_FILE
 
-    if not os.path.exists(data_file_to_check):
-        print(f"ERROR: Raw data file not found at {data_file_to_check}")
-        print("Please ensure the dataset is available and the path in src/config.py (RAW_DATA_FILE) is correct.")
-        print("You might need to download it and place it in the 'data/' directory and name it appropriately.")
+    # Simplified pre-run check, detailed check is now inside run_pipeline
+    if not data_file_to_run or not os.path.exists(data_file_to_run):
+        print(f"ERROR: Raw data file not found.")
+        if args.input_file: # If --input-file was provided and not found
+            print(f"  Checked path from --input-file: {args.input_file}")
+        # If --input-file was not provided OR it was but not found, AND config.RAW_DATA_FILE is different and relevant
+        if not args.input_file or \
+           (args.input_file and not os.path.exists(args.input_file) and \
+            config.RAW_DATA_FILE and config.RAW_DATA_FILE != args.input_file):
+            print(f"  Checked path from config.RAW_DATA_FILE: {config.RAW_DATA_FILE}")
+        print("Please ensure the dataset is available and the path is correct.")
     else:
-        run_pipeline(experiment_type=args.experiment)
+        run_pipeline(experiment_type=args.experiment, input_csv_path=data_file_to_run)
 
     # Example: To run both experiments as per proposal
     # print("\nRunning pipeline for 'all_features' experiment...")

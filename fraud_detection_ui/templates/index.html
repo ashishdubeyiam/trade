@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection Pipeline</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="file"] { display: block; margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        input[type="submit"] { background-color: #5cb85c; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        input[type="submit"]:hover { background-color: #4cae4c; }
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .error { background-color: #f2dede; color: #a94442; border: 1px solid #ebccd1; }
+        .success { background-color: #dff0d8; color: #3c763d; border: 1px solid #d6e9c6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Transaction Data for Fraud Detection</h1>
+
+        <!-- Flash messages placeholder -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+            <div>
+                <label for="datafile">Select CSV File:</label>
+                <input type="file" id="datafile" name="datafile" accept=".csv" required>
+            </div>
+            <div>
+                <input type="submit" value="Upload and Process">
+            </div>
+        </form>
+    </div>
+</body>
+</html>
