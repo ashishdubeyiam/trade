@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Coding Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Coding Platform</h1>
+            <ul>
+                <li><a href="#teacher-section">Teacher</a></li>
+                <li><a href="#student-section">Student</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="teacher-section">
+            <h2>Teacher Portal</h2>
+            <form id="create-assignment-form">
+                <div>
+                    <label for="project-title">Project Title:</label>
+                    <input type="text" id="project-title" name="project-title" required>
+                </div>
+                <div>
+                    <label for="project-description">Project Description:</label>
+                    <textarea id="project-description" name="project-description" rows="4" required></textarea>
+                </div>
+                <div>
+                    <label for="programming-language">Programming Language:</label>
+                    <select id="programming-language" name="programming-language">
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="html">HTML</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="assignment-code">Assignment Code (for students to join):</label>
+                    <input type="text" id="assignment-code" name="assignment-code" required>
+                </div>
+                <button type="submit">Create Assignment</button>
+            </form>
+        </section>
+
+        <section id="student-section">
+            <h2>Student Portal</h2>
+            <form id="join-assignment-form">
+                <div>
+                    <label for="student-name">Your Name:</label>
+                    <input type="text" id="student-name" name="student-name" required>
+                </div>
+                <div>
+                    <label for="join-code">Enter Assignment Code:</label>
+                    <input type="text" id="join-code" name="join-code" required>
+                </div>
+                <button type="submit">Join Assignment</button>
+            </form>
+            <div id="assignment-details" style="display: none;">
+                <h3 id="assignment-title"></h3>
+                <p id="assignment-description"></p>
+                <p><strong>Language:</strong> <span id="assignment-language"></span></p>
+                <textarea id="student-code" rows="10" placeholder="Enter your code here..."></textarea>
+                <button id="submit-code">Submit Code</button>
+                <div id="output-area">
+                    <h4>Output:</h4>
+                    <pre id="output"></pre>
+                </div>
+                <div id="error-area" style="display: none;">
+                    <h4>Errors:</h4>
+                    <pre id="errors"></pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Interactive Coding Platform</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
