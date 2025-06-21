@@ -55,8 +55,19 @@ def upload_file():
 
             command = ['python', main_script_path, '--input-file', absolute_uploaded_file_path, '--experiment', 'all_features']
 
+            # --- Environment setup for subprocess ---
+            # Define the src directory of the ML project for PYTHONPATH
+            ml_project_src_dir = os.path.abspath(os.path.join(project_root_dir, 'fraud_detection_project', 'src'))
+
+            # Get current environment and update PYTHONPATH
+            env = os.environ.copy()
+            existing_python_path = env.get('PYTHONPATH', '')
+            env['PYTHONPATH'] = f"{ml_project_src_dir}{os.pathsep}{existing_python_path}"
+            # --- End environment setup ---
+
             print(f"Executing command: {' '.join(command)}")
             print(f"Using CWD for subprocess: {ml_project_root_for_cwd}")
+            print(f"Setting PYTHONPATH for subprocess to: {env['PYTHONPATH']}")
 
             metrics_data = None
             error_message = None
@@ -68,7 +79,8 @@ def upload_file():
                                          text=True,
                                          check=False,
                                          timeout=300,
-                                         cwd=ml_project_root_for_cwd)
+                                         cwd=ml_project_root_for_cwd,
+                                         env=env) # Pass modified environment
 
                 print("--- Subprocess STDOUT ---")
                 print(process.stdout)
