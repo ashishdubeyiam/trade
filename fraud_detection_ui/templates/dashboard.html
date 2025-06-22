@@ -70,7 +70,7 @@
                         <td>{{ run.original_filename }}</td>
                         <td>{{ run.upload_timestamp.strftime('%Y-%m-%d %H:%M:%S') if run.upload_timestamp else 'N/A' }}</td>
                         <td class="{{ 'status-success' if run.status_message and 'Success' in run.status_message else 'status-error' }}">{{ run.status_message }}</td>
-                        <td><a href="{{ url_for('run_details', run_id=run.id) }}">View Results</a></td>
+                        <td><a href="{{ url_for('run_detail', run_id=run.id) }}">View Results</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
