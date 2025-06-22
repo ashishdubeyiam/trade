@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fraud Detection Results</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f4; color: #333; } /* Removed margin:20px for nav menu */
+        .nav-menu { background-color: #333; overflow: hidden; padding: 10px 0; text-align: center; width: 100%; }
+        .nav-menu a { color: white; padding: 14px 20px; text-decoration: none; font-size: 17px; }
+        .nav-menu a:hover { background-color: #ddd; color: black; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: 20px; /* Added margin back here */ }
         h1, h2 { color: #333; text-align: center; }
         table { width: 80%; margin: 20px auto; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -20,6 +23,11 @@
     </style>
 </head>
 <body>
+    <div class="nav-menu">
+        <a href="{{ url_for('index') }}">Home / New Upload</a>
+        <!-- Add other links here in the future if needed -->
+    </div>
+
     <div class="container">
         <h1>Fraud Detection Pipeline Results</h1>
 
@@ -34,10 +42,9 @@
             </div>
         {% elif metrics_data %}
             <h2 style="text-align:center;">Results for file: {{ filename }}</h2>
-            {% for model_key, metrics in metrics_data.items() %}
+            {% for model_key_from_json, metrics in metrics_data.items() %} {# Renamed model_name to model_key_from_json for clarity #}
             <div class="metrics-section">
-                <!-- Displaying the model key from JSON, which might include experiment type -->
-                <h2>Metrics for: {{ model_key }}</h2>
+                <h2>Metrics for: {{ model_key_from_json }}</h2>
                 <table>
                     <tr><th>Metric</th><th>Value</th></tr>
                     <tr><td>Accuracy</td><td>{{ metrics.accuracy | round(4) if metrics.accuracy is not none else 'N/A' }}</td></tr>
@@ -53,13 +60,26 @@
                     <tr><td>Geometric Mean</td><td>{{ metrics.geometric_mean | round(4) if metrics.geometric_mean is not none else 'N/A' }}</td></tr>
                 </table>
 
-                <!-- Constructing image name based on the model_key from JSON -->
-                {% set model_name_part = model_key.split('_all_features')[0] if '_all_features' in model_key else model_key %}
-                {% set cm_image_filename = model_name_part.lower().replace(' ', '_') + '_cm.png' %}
-                {% set cm_image_path_display = 'results/confusion_matrices/' + cm_image_filename %}
+                {# Logic to derive base model name for image filename #}
+                {% set parts = model_key_from_json.split('_') %}
+                {% set base_model_name_for_img = parts[0] %} {# Default to first part, e.g. "Logistic" from "Logistic Regression_..." #}
+                {% if "Random Forest" in model_key_from_json %}
+                    {% set base_model_name_for_img = "Random Forest" %}
+                {% elif "Logistic Regression" in model_key_from_json %}
+                    {% set base_model_name_for_img = "Logistic Regression" %}
+                {% elif "Decision Tree" in model_key_from_json %}
+                    {% set base_model_name_for_img = "Decision Tree" %}
+                {% elif "ANN" in model_key_from_json %}
+                    {% set base_model_name_for_img = "ANN" %}
+                {% endif %}
+                {# This assumes model names in keys are like "Logistic Regression_all_features", "Random Forest_all_features" etc. #}
+                {# The plot filenames are "logistic_regression_cm.png", "random_forest_cm.png" #}
 
-                <p>Confusion Matrix plot saved as: <strong>{{ cm_image_path_display }}</strong></p>
-                <p style="text-align:center; font-style:italic;">(To view images, check the 'fraud_detection_project/results/confusion_matrices/' directory within your project. Direct image display in this UI is a future enhancement.)</p>
+                {% set cm_image_filename = base_model_name_for_img.lower().replace(' ', '_') + '_cm.png' %}
+
+                <p>Confusion Matrix for {{ base_model_name_for_img }}:</p>
+                <img src="{{ url_for('serve_generated_image', filename=cm_image_filename) }}" alt="Confusion Matrix for {{ base_model_name_for_img }}" class="cm-image" style="border:1px solid #ddd; max-width:500px; display:block; margin:10px auto;">
+                <p style="text-align:center; font-style:italic;">If image is not displayed, check server logs and ensure file '{{ cm_image_filename }}' exists in 'fraud_detection_project/results/confusion_matrices/'.</p>
             </div>
             {% endfor %}
         {% else %}

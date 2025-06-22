@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory # Added send_from_directory
 import os
 from werkzeug.utils import secure_filename
 import subprocess
@@ -12,6 +12,11 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+# Define root paths for accessing other project directories
+APP_ROOT = os.path.dirname(os.path.abspath(__file__)) # Root of the UI app (fraud_detection_ui/)
+PROJECT_ROOT_DIR = os.path.dirname(APP_ROOT) # Root of the entire repository (parent of fraud_detection_ui/ and fraud_detection_project/)
+CONFUSION_MATRICES_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, 'fraud_detection_project', 'results', 'confusion_matrices'))
 
 app.secret_key = 'super secret key'
 
@@ -157,6 +162,25 @@ def upload_file():
             return redirect(url_for('index'))
 
     return redirect(url_for('index'))
+
+@app.route('/generated_images/<path:filename>')
+def serve_generated_image(filename):
+    # Ensure the directory exists to prevent errors if it's somehow missing
+    if not os.path.isdir(CONFUSION_MATRICES_DIR):
+        print(f"ERROR: Confusion matrices directory not found: {CONFUSION_MATRICES_DIR}") # Using print for server log
+        return "Image directory not found.", 404
+
+    # Basic security: ensure filename is just a filename, not a path traversal attempt
+    if '..' in filename or filename.startswith('/'):
+        print(f"WARNING: Potentially unsafe filename requested: {filename}") # Using print for server log
+        return "Invalid filename.", 400
+
+    print(f"INFO: Attempting to serve image: {filename} from {CONFUSION_MATRICES_DIR}") # Using print for server log
+    try:
+        return send_from_directory(CONFUSION_MATRICES_DIR, filename)
+    except FileNotFoundError:
+        print(f"ERROR: Image not found: {filename} in {CONFUSION_MATRICES_DIR}") # Using print for server log
+        return "Image not found.", 404
 
 if __name__ == '__main__':
     app.run(debug=True)
