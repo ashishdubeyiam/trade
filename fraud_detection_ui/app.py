@@ -48,7 +48,7 @@ class PipelineRun(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     upload_timestamp = db.Column(db.DateTime, default=db.func.current_timestamp()) # Using db.func for database's current time
     original_filename = db.Column(db.String(255), nullable=False)
-    status_message = db.Column(db.Text, nullable=True) # To store success or error messages
+    status_message = db.Column(db.UnicodeText, nullable=True) # For NVARCHAR(MAX)
     results = db.relationship('ModelResult', backref='pipeline_run', lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
