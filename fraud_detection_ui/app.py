@@ -371,12 +371,37 @@ def dashboard():
         # Or if served via serve_generated_image:
         # latest_run_chart_path = url_for('serve_generated_image', filename='latest_run_f1_scores.png')
 
-        # Generate chart for the latest successful run
+        # Generate chart for the latest successful run and get prediction counts
         latest_successful_run = db.session.query(PipelineRun).filter(PipelineRun.status_message.ilike('Success%')).order_by(desc(PipelineRun.upload_timestamp)).first()
+
+        # Initialize new summary stats for prediction counts
+        summary_stats['latest_run_predicted_fraud'] = 'N/A'
+        summary_stats['latest_run_predicted_legit'] = 'N/A'
+        summary_stats['latest_run_model_for_counts'] = 'N/A'
+
         if latest_successful_run:
             model_results_for_latest_run = db.session.query(ModelResult).filter(ModelResult.pipeline_run_id == latest_successful_run.id).all()
             if model_results_for_latest_run:
                 latest_run_chart_filename = generate_performance_chart(latest_successful_run.id, model_results_for_latest_run)
+
+                # Try to find Random Forest results, otherwise use the first model's results for prediction counts
+                chosen_model_result = None
+                for res in model_results_for_latest_run:
+                    if "Random Forest" in res.model_name:
+                        chosen_model_result = res
+                        break
+                if not chosen_model_result and model_results_for_latest_run:
+                    chosen_model_result = model_results_for_latest_run[0] # Fallback to the first model
+
+                if chosen_model_result:
+                    summary_stats['latest_run_model_for_counts'] = chosen_model_result.model_name
+                    tp = chosen_model_result.tp if chosen_model_result.tp is not None else 0
+                    fp = chosen_model_result.fp if chosen_model_result.fp is not None else 0
+                    tn = chosen_model_result.tn if chosen_model_result.tn is not None else 0
+                    fn = chosen_model_result.fn if chosen_model_result.fn is not None else 0
+
+                    summary_stats['latest_run_predicted_fraud'] = tp + fp
+                    summary_stats['latest_run_predicted_legit'] = tn + fn
 
     except Exception as e:
         flash(f"Error querying database for dashboard data: {str(e)}", "error")

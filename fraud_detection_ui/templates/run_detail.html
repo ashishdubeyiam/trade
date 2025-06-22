@@ -30,6 +30,8 @@
                     <tr><td>True Positives (TP)</td><td>{{ result.tp if result.tp is not none else 'N/A' }}</td></tr>
                     <tr><td>Specificity</td><td>{{ result.specificity | round(4) if result.specificity is not none else 'N/A' }}</td></tr>
                     <tr><td>Geometric Mean</td><td>{{ result.geometric_mean | round(4) if result.geometric_mean is not none else 'N/A' }}</td></tr>
+                    <tr><td>Total Predicted Fraudulent</td><td>{{ (result.tp if result.tp is not none else 0) + (result.fp if result.fp is not none else 0) }}</td></tr>
+                    <tr><td>Total Predicted Legitimate</td><td>{{ (result.tn if result.tn is not none else 0) + (result.fn if result.fn is not none else 0) }}</td></tr>
                 </table>
 
                 {% if result.confusion_matrix_plot_path %}

@@ -32,6 +32,8 @@
                 <tr><td>True Positives (TP)</td><td>{{ metrics.tp if metrics.tp is not none else 'N/A' }}</td></tr>
                 <tr><td>Specificity</td><td>{{ metrics.specificity | round(4) if metrics.specificity is not none else 'N/A' }}</td></tr>
                 <tr><td>Geometric Mean</td><td>{{ metrics.geometric_mean | round(4) if metrics.geometric_mean is not none else 'N/A' }}</td></tr>
+                    <tr><td>Total Predicted Fraudulent</td><td>{{ (metrics.tp if metrics.tp is not none else 0) + (metrics.fp if metrics.fp is not none else 0) }}</td></tr>
+                    <tr><td>Total Predicted Legitimate</td><td>{{ (metrics.tn if metrics.tn is not none else 0) + (metrics.fn if metrics.fn is not none else 0) }}</td></tr>
             </table>
 
             {% set parts = model_key_from_json.split('_') %}
