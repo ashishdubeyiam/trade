@@ -3,38 +3,21 @@
 import os
 import argparse
 import json # Added for loading/saving metrics json
+import sys # Make sure sys is imported
 
-# Attempt to import project modules
-# This structure assumes main.py is in src/ and can import other src/ modules directly
-try:
-    import config
-    import data_preprocessing
-    import train_models
-    import evaluate_models
-except ModuleNotFoundError as e:
-    print(f"Error importing project modules: {e}")
-    print("Ensure you are running main.py from a location where 'src' is discoverable,")
-    print("or that 'src' is in your PYTHONPATH.")
-    print("For example, run from the 'fraud_detection_project' directory as 'python src/main.py'")
-    # Provide very basic fallbacks if run directly and modules not found,
-    # though this is not ideal for a structured project.
-    if 'config' not in globals():
-        class config:
-            RAW_DATA_FILE = '../data/fraud_dataset.csv'
-            TRAIN_DATA_FILE = '../data/processed/train.csv'
-            TEST_DATA_FILE = '../data/processed/test.csv'
-            RESULTS_DIR = '../results' # Added for fallback
-            EVALUATION_METRICS_FILE = '../results/evaluation_metrics.json'
-            TARGET_COLUMN = 'isFraud'
-            LOGISTIC_REGRESSION_MODEL_PATH = '../models/logistic_regression_model.joblib'
-            RANDOM_FOREST_MODEL_PATH = '../models/random_forest_model.joblib'
-            DECISION_TREE_MODEL_PATH = '../models/decision_tree_model.joblib'
-            # Ensure necessary dirs for fallback
-            os.makedirs('../data/processed', exist_ok=True)
-            os.makedirs('../models', exist_ok=True)
-            os.makedirs('../results/confusion_matrices', exist_ok=True) # from evaluate_models fallback
-            os.makedirs(RESULTS_DIR, exist_ok=True) # Ensure results dir itself
+# Ensure the 'src' directory (where main.py and its sibling modules reside) is in sys.path
+# This helps Python find modules like config, data_preprocessing, etc., when main.py is run as a script.
+current_script_path = os.path.abspath(__file__)
+src_directory = os.path.dirname(current_script_path)
 
+if src_directory not in sys.path:
+    sys.path.insert(0, src_directory)
+
+# Direct imports after sys.path modification
+import config
+import data_preprocessing
+import train_models
+import evaluate_models
 
 def run_pipeline(experiment_type='all_features', input_csv_path=None):
     """
