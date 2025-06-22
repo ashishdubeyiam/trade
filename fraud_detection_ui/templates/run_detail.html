@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Details for Run {{ run.id if run else 'Unknown' }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if run %}
+        <h1>Details for Pipeline Run #{{ run.id }}</h1>
+        <p><strong>Original Filename:</strong> {{ run.original_filename }}</p>
+        <p><strong>Upload Timestamp:</strong> {{ run.upload_timestamp.strftime('%Y-%m-%d %H:%M:%S') if run.upload_timestamp else 'N/A' }}</p>
+        <p><strong>Status:</strong> <span style="color: {{ 'green' if 'Success' in run.status_message else 'red' }};">{{ run.status_message }}</span></p>
+
+        <hr style="margin: 20px 0;">
+
+        {% if run.results and run.results | length > 0 %}
+            <h2>Model Performance Metrics:</h2>
+            {% for result in run.results %}
+            <div class="metrics-section" style="margin-bottom: 30px; padding: 15px; background-color: #f9f9f9; border-radius: 5px;">
+                <h3>Results for: {{ result.model_name }}</h3>
+                <table style="width: 100%; margin-top: 10px;">
+                    <tr><th>Metric</th><th>Value</th></tr>
+                    <tr><td>Accuracy</td><td>{{ result.accuracy | round(4) if result.accuracy is not none else 'N/A' }}</td></tr>
+                    <tr><td>Precision</td><td>{{ result.precision | round(4) if result.precision is not none else 'N/A' }}</td></tr>
+                    <tr><td>Recall</td><td>{{ result.recall | round(4) if result.recall is not none else 'N/A' }}</td></tr>
+                    <tr><td>F1-Score</td><td>{{ result.f1_score | round(4) if result.f1_score is not none else 'N/A' }}</td></tr>
+                    <tr><td>ROC-AUC</td><td>{{ result.roc_auc | round(4) if result.roc_auc is not none else 'N/A' }}</td></tr>
+                    <tr><td>True Negatives (TN)</td><td>{{ result.tn if result.tn is not none else 'N/A' }}</td></tr>
+                    <tr><td>False Positives (FP)</td><td>{{ result.fp if result.fp is not none else 'N/A' }}</td></tr>
+                    <tr><td>False Negatives (FN)</td><td>{{ result.fn if result.fn is not none else 'N/A' }}</td></tr>
+                    <tr><td>True Positives (TP)</td><td>{{ result.tp if result.tp is not none else 'N/A' }}</td></tr>
+                    <tr><td>Specificity</td><td>{{ result.specificity | round(4) if result.specificity is not none else 'N/A' }}</td></tr>
+                    <tr><td>Geometric Mean</td><td>{{ result.geometric_mean | round(4) if result.geometric_mean is not none else 'N/A' }}</td></tr>
+                </table>
+
+                {% if result.confusion_matrix_plot_path %}
+                    <p style="margin-top:15px;"><strong>Confusion Matrix:</strong></p>
+                    <img src="{{ url_for('serve_generated_image', filename=result.confusion_matrix_plot_path) }}" alt="Confusion Matrix for {{ result.model_name }}" class="cm-image" style="border:1px solid #ddd; max-width:500px; display:block; margin:10px auto;">
+                    <p style="text-align:center; font-style:italic;">Filename: {{ result.confusion_matrix_plot_path }}</p>
+                {% else %}
+                    <p style="margin-top:15px;">No confusion matrix plot available for {{ result.model_name }}.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% elif 'Success' in run.status_message %}
+            <p>Metrics data is not available for this successful run, or no models produced metrics.</p>
+        {% endif %}
+
+    {% else %}
+        <h1>Run Details Not Found</h1>
+        <p>The requested pipeline run details could not be found in the database.</p>
+    {% endif %}
+
+    <div class="back-link" style="margin-top: 30px;">
+        <a href="{{ url_for('history') }}">Back to History</a> |
+        <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    /* .container, h1, table, th, td, .cm-image, .back-link, pre styles are from base.html */
+    .metrics-section {
+        margin-bottom: 30px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        border: 1px solid #e7e7e7;
+    }
+    /* Conditional text color for status can remain inline or be class-based if preferred */
+    /* status-success and status-error classes are in base.html if needed for status_message span */
+</style>
+{% endblock %}
