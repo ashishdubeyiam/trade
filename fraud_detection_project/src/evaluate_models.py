@@ -5,7 +5,7 @@ import joblib
 import os
 import json
 import numpy as np # Added numpy import
-import tensorflow as tf # Added for ANN
+# import tensorflow as tf # Commented out for optional import
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -33,6 +33,13 @@ except ModuleNotFoundError:
         os.makedirs(RESULTS_DIR, exist_ok=True)
         os.makedirs(CONFUSION_MATRIX_DIR, exist_ok=True)
 
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    # TENSORFLOW_AVAILABLE = True # Not strictly needed here if tf is not used otherwise
+except ImportError:
+    pass # Silently pass if not found, as it's not critical for non-ANN model evaluation
+    # TENSORFLOW_AVAILABLE = False
 
 def load_test_data(test_file_path):
     """Loads processed test data."""

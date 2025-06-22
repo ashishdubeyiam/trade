@@ -6,7 +6,7 @@ import os
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
-import tensorflow as tf # Added for ANN
+# import tensorflow as tf # Commented out for optional import
 
 # Assuming config.py is in the same directory or accessible via PYTHONPATH
 try:
@@ -29,6 +29,14 @@ except ModuleNotFoundError:
 
         # Create fallback directories if they don't exist
         os.makedirs(MODEL_DIR, exist_ok=True)
+
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    # print("TensorFlow not found. ANN functionality will be a basic placeholder.")
 
 
 def load_processed_data(train_file_path):
