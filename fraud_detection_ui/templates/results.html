@@ -11,12 +11,22 @@
         table { width: 80%; margin: 20px auto; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f0f0f0; }
-        .metrics-section { margin-bottom: 30px; }
+        .metrics-section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px dashed #ccc; }
+        .metrics-section:last-of-type { border-bottom: none; } /* Remove border for the last metrics section if prediction section is not there */
         .cm-image { display: block; margin: 10px auto; max-width: 400px; border: 1px solid #ddd; }
         a { color: #007bff; text-decoration: none; }
         a:hover { text-decoration: underline; }
-        .back-link { display: block; text-align: center; margin-top: 20px; }
+        .button { /* Basic button styling */
+            background-color: #007bff; color: white; padding: 8px 15px; border-radius: 5px;
+            text-decoration: none; display: inline-block; margin-top: 5px;
+        }
+        .button:hover { background-color: #0056b3; }
+        .back-link { display: block; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
         pre { text-align: left; background-color: #eee; padding: 10px; border-radius: 3px; white-space: pre-wrap; word-wrap: break-word; }
+        .predictions-global-section { margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; }
+        .predictions-global-section h2 { text-align: left; margin-bottom: 15px;}
+        .predictions-global-section ul { list-style-type: none; padding-left: 0; }
+        .predictions-global-section li { margin-bottom: 10px; background-color: #fff; padding:10px; border:1px solid #eee; border-radius:4px;}
     </style>
 </head>
 <body>
@@ -34,38 +44,64 @@
             </div>
         {% elif metrics_data %}
             <h2 style="text-align:center;">Results for file: {{ filename }}</h2>
-            {% for model_key, metrics in metrics_data.items() %}
+            {% for model_key_from_json, metrics in metrics_data.items() %}
             <div class="metrics-section">
-                <!-- Displaying the model key from JSON, which might include experiment type -->
-                <h2>Metrics for: {{ model_key }}</h2>
+                <h2>Metrics for: {{ model_key_from_json }}</h2>
                 <table>
                     <tr><th>Metric</th><th>Value</th></tr>
-                    <tr><td>Accuracy</td><td>{{ metrics.accuracy | round(4) if metrics.accuracy is not none else 'N/A' }}</td></tr>
-                    <tr><td>Precision</td><td>{{ metrics.precision | round(4) if metrics.precision is not none else 'N/A' }}</td></tr>
-                    <tr><td>Recall</td><td>{{ metrics.recall | round(4) if metrics.recall is not none else 'N/A' }}</td></tr>
-                    <tr><td>F1-Score</td><td>{{ metrics.f1_score | round(4) if metrics.f1_score is not none else 'N/A' }}</td></tr>
-                    <tr><td>ROC-AUC</td><td>{{ metrics.roc_auc | round(4) if metrics.roc_auc is not none else 'N/A' }}</td></tr>
+                    <tr><td>Accuracy</td><td>{{ metrics.accuracy | round(4) if metrics.accuracy is not none and metrics.accuracy != 'N/A' else 'N/A' }}</td></tr>
+                    <tr><td>Precision</td><td>{{ metrics.precision | round(4) if metrics.precision is not none and metrics.precision != 'N/A' else 'N/A' }}</td></tr>
+                    <tr><td>Recall</td><td>{{ metrics.recall | round(4) if metrics.recall is not none and metrics.recall != 'N/A' else 'N/A' }}</td></tr>
+                    <tr><td>F1-Score</td><td>{{ metrics.f1_score | round(4) if metrics.f1_score is not none and metrics.f1_score != 'N/A' else 'N/A' }}</td></tr>
+                    <tr><td>ROC-AUC</td><td>{{ metrics.roc_auc | round(4) if metrics.roc_auc is not none and metrics.roc_auc != 'N/A' else 'N/A' }}</td></tr>
                     <tr><td>True Negatives (TN)</td><td>{{ metrics.tn if metrics.tn is not none else 'N/A' }}</td></tr>
                     <tr><td>False Positives (FP)</td><td>{{ metrics.fp if metrics.fp is not none else 'N/A' }}</td></tr>
                     <tr><td>False Negatives (FN)</td><td>{{ metrics.fn if metrics.fn is not none else 'N/A' }}</td></tr>
                     <tr><td>True Positives (TP)</td><td>{{ metrics.tp if metrics.tp is not none else 'N/A' }}</td></tr>
-                    <tr><td>Specificity</td><td>{{ metrics.specificity | round(4) if metrics.specificity is not none else 'N/A' }}</td></tr>
-                    <tr><td>Geometric Mean</td><td>{{ metrics.geometric_mean | round(4) if metrics.geometric_mean is not none else 'N/A' }}</td></tr>
+                    <tr><td>Specificity</td><td>{{ metrics.specificity | round(4) if metrics.specificity is not none and metrics.specificity != 'N/A' else 'N/A' }}</td></tr>
+                    <tr><td>Geometric Mean</td><td>{{ metrics.geometric_mean | round(4) if metrics.geometric_mean is not none and metrics.geometric_mean != 'N/A' else 'N/A' }}</td></tr>
+                    {% if metrics.error %}
+                    <tr><td colspan="2" style="color: red; text-align: center;">Note: {{ metrics.error }}</td></tr>
+                    {% endif %}
                 </table>
 
-                <!-- Constructing image name based on the model_key from JSON -->
-                {% set model_name_part = model_key.split('_all_features')[0] if '_all_features' in model_key else model_key %}
-                {% set cm_image_filename = model_name_part.lower().replace(' ', '_') + '_cm.png' %}
-                {% set cm_image_path_display = 'results/confusion_matrices/' + cm_image_filename %}
+                {% set model_name_part = model_key_from_json.split('_all_features')[0] if '_all_features' in model_key_from_json else model_key_from_json %}
+                {% set model_name_for_cm = model_key_from_json.lower().replace(" ", "_") %}
+                {# More robust sanitization for cm_image_filename to match evaluate_models.py #}
+                {% set cm_image_filename_base = model_key_from_json.lower().replace(" ", "_") %}
+                {% set cm_image_filename_base = cm_image_filename_base.replace("[^a-zA-Z0-9_]", "") %}
+                {% set cm_image_filename = "predictions_" + cm_image_filename_base + "_cm.png" %}
+                {# Correction: cm_image_filename should be based on model_name_key_cm.png as saved by evaluate_models.py #}
+                {% set safe_cm_filename_base = model_key_from_json.lower().replace(" ", "_") %}
+                {% set safe_cm_filename_base = "".join(c if c.isalnum() or c == "_" else "" for c in safe_cm_filename_base) %}
+                {% set cm_image_filename = safe_cm_filename_base + '_cm.png' %}
 
+
+                {% set cm_image_path_display = 'results/confusion_matrices/' + cm_image_filename %}
                 <p>Confusion Matrix plot saved as: <strong>{{ cm_image_path_display }}</strong></p>
-                <p style="text-align:center; font-style:italic;">(To view images, check the 'fraud_detection_project/results/confusion_matrices/' directory within your project. Direct image display in this UI is a future enhancement.)</p>
+                <p style="text-align:center; font-style:italic;">(To view images, check the 'fraud_detection_project/results/confusion_matrices/' directory. Direct image display is a future enhancement.)</p>
+
+                {# Add section for downloading predictions for this specific model #}
+                {% if prediction_files_info %}
+                    {% for file_info in prediction_files_info %}
+                        {% if file_info.display_name == model_key_from_json %}
+                            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center;">
+                                <p><strong>Download detailed predictions:</strong></p>
+                                <a href="{{ url_for('download_predictions', filename=file_info.csv_filename) }}" class="button">Download Predictions for {{ file_info.display_name }}</a>
+                                <p style="font-style: italic; font-size: 0.9em;">(File: {{ file_info.csv_filename }})</p>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
             </div>
             {% endfor %}
 
+            {# Global section for prediction files - this was the previous implementation, replaced by per-model above #}
+            {# This can be removed if per-model links are preferred and working #}
+            {#
             {% if prediction_files_info and prediction_files_info|length > 0 %}
-            <div class="predictions-download-section">
-                <h2>Download Prediction Details</h2>
+            <div class="predictions-global-section">
+                <h2>Download All Prediction Details</h2>
                 <p>For each model, you can download a CSV file containing the test instances, their true labels, predicted labels, and predicted probabilities (if available).</p>
                 <ul>
                     {% for file_info in prediction_files_info %}
@@ -77,16 +113,22 @@
                 </ul>
             </div>
             {% elif metrics_data %}
-            {# Only show this message if metrics_data was present, but no prediction_files_info #}
-            {# This case implies that the prediction_files_info logic in app.py might not have run or found files #}
-            <div class="predictions-download-section">
+            <div class="predictions-global-section">
                 <h2>Download Prediction Details</h2>
                 <p>No prediction files were found or generated for download for this run.</p>
             </div>
             {% endif %}
+            #}
 
         {% else %}
-            <p>No metrics data available to display for file '{{ filename }}'. The pipeline might have run, but results could not be loaded or were not generated.</p>
+             {# This case is for when there's no error_message AND no metrics_data #}
+            <div style="text-align: center; margin-top: 20px;">
+                <p>No metrics data or error messages to display for file '{{ filename }}'.</p>
+                <p>If the pipeline ran, results might not have been generated or loaded correctly.</p>
+                {% if prediction_files_info is defined and (prediction_files_info == none or prediction_files_info|length == 0) %}
+                    <p>Also, no prediction files were found for download.</p>
+                {% endif %}
+            </div>
         {% endif %}
 
         <div class="back-link">
