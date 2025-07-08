@@ -12,26 +12,40 @@ import seaborn as sns
 
 # Assuming config.py is in the same directory or accessible via PYTHONPATH
 try:
+    # This assumes evaluate_models.py is in src/, and config.py is also in src/
+    # If your project structure is different, adjust the import path.
+    # For example, if config.py is one level up: from .. import config
     import config
 except ModuleNotFoundError:
-    print("Make sure config.py is in the src/ directory or PYTHONPATH includes src")
-    # Fallback for simple execution
+    print("Attempting to import 'config' failed. Ensure config.py is in the 'src/' directory or adjust PYTHONPATH.")
+    print("Using fallback configuration for standalone execution.")
+    # Fallback for simple execution if config.py is not found
     class config: # Basic fallback
-        TEST_DATA_FILE = '../data/processed/test.csv' # Adjust if necessary
-        MODEL_DIR = '../models'
-        RESULTS_DIR = '../results'
+        # Define project root assuming this script is in fraud_detection_project/src/
+        PROJECT_ROOT_FALLBACK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        DATA_DIR = os.path.join(PROJECT_ROOT_FALLBACK, 'data')
+        PROCESSED_DATA_DIR = os.path.join(DATA_DIR, 'processed')
+        TEST_DATA_FILE = os.path.join(PROCESSED_DATA_DIR, 'test.csv')
+
+        MODEL_DIR = os.path.join(PROJECT_ROOT_FALLBACK, 'models')
+        RESULTS_DIR = os.path.join(PROJECT_ROOT_FALLBACK, 'results')
         CONFUSION_MATRIX_DIR = os.path.join(RESULTS_DIR, 'confusion_matrices')
+        PREDICTIONS_DIR = os.path.join(RESULTS_DIR, 'predictions') # Added PREDICTIONS_DIR
         EVALUATION_METRICS_FILE = os.path.join(RESULTS_DIR, 'evaluation_metrics.json')
+
         LOGISTIC_REGRESSION_MODEL_PATH = os.path.join(MODEL_DIR, 'logistic_regression_model.joblib')
         RANDOM_FOREST_MODEL_PATH = os.path.join(MODEL_DIR, 'random_forest_model.joblib')
         DECISION_TREE_MODEL_PATH = os.path.join(MODEL_DIR, 'decision_tree_model.joblib')
-        ANN_MODEL_PATH = os.path.join(MODEL_DIR, 'ann_model.h5') # Added for ANN
-        TARGET_COLUMN = 'isFraud' # Ensure this matches your target column name
+        ANN_MODEL_PATH = os.path.join(MODEL_DIR, 'ann_model.h5')
+        TARGET_COLUMN = 'Fraud_Label' # Standardized target column name
 
         # Create fallback directories if they don't exist
+        os.makedirs(PROCESSED_DATA_DIR, exist_ok=True) # Ensure processed data dir exists for test file path
         os.makedirs(MODEL_DIR, exist_ok=True)
         os.makedirs(RESULTS_DIR, exist_ok=True)
         os.makedirs(CONFUSION_MATRIX_DIR, exist_ok=True)
+        os.makedirs(PREDICTIONS_DIR, exist_ok=True) # Ensure predictions dir is created for fallback
 
 
 def load_test_data(test_file_path):
@@ -147,10 +161,50 @@ def evaluate_model(model, X_test, y_test, model_name):
         if hasattr(model, "predict_proba"):
             y_pred_proba = model.predict_proba(X_test)[:, 1] # Probability of positive class
 
+        # Save predictions along with features and true labels
+        # Ensure X_test is a DataFrame for this operation. If it's a numpy array, convert it or handle accordingly.
+        if isinstance(X_test, pd.DataFrame):
+            predictions_df = X_test.copy()
+        else:
+            # If X_test is not a DataFrame, create a new one. Requires feature names for columns.
+            # This part might need adjustment if X_test can be a numpy array without column info.
+            # For simplicity, assuming X_test from load_test_data is always a DataFrame.
+            print("Warning: X_test is not a DataFrame. Predictions CSV will only contain labels and probabilities.")
+            predictions_df = pd.DataFrame()
+
+
+        # Ensure y_test is aligned if its index is different
+        # (e.g., after undersampling in preprocessing, though X_test and y_test to evaluate_model should be aligned)
+        predictions_df['true_label'] = y_test.values # Use .values to avoid index issues if y_test is a Series with a different index
+        predictions_df['predicted_label'] = y_pred
+        if y_pred_proba is not None:
+            predictions_df['predicted_probability_fraud'] = y_pred_proba
+        else:
+            # Create a column of NaNs or 0s if probabilities are not available
+            predictions_df['predicted_probability_fraud'] = np.nan
+
+        # Construct filename and save
+        # Sanitize model_name for filename (simple sanitization)
+        safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name.lower())
+        predictions_filename = f"predictions_{safe_model_name}.csv"
+        # Ensure config.PREDICTIONS_DIR is defined in your config object (either imported or fallback)
+        if hasattr(config, 'PREDICTIONS_DIR'):
+            predictions_filepath = os.path.join(config.PREDICTIONS_DIR, predictions_filename)
+
+            try:
+                os.makedirs(config.PREDICTIONS_DIR, exist_ok=True) # Ensure dir exists
+                predictions_df.to_csv(predictions_filepath, index=False)
+                print(f"Predictions for {model_name} saved to: {predictions_filepath}")
+            except Exception as e_save:
+                print(f"Error saving predictions for {model_name}: {e_save}")
+        else:
+            print(f"Error: config.PREDICTIONS_DIR not defined. Cannot save predictions for {model_name}.")
+
+
         metrics = calculate_metrics(y_test, y_pred, y_pred_proba)
         if 'confusion_matrix' in metrics and isinstance(metrics['confusion_matrix'], list): # Use the list form
              # Convert list back to numpy array for plotting
-            cm_array = np.array(metrics['confusion_matrix']) # Corrected: Use numpy directly
+            cm_array = np.array(metrics['confusion_matrix'])
             plot_confusion_matrix(cm_array, model_name)
         return metrics
     except Exception as e:

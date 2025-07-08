@@ -43,10 +43,11 @@ FEATURES_TO_DROP_EXPERIMENT2 = ['nameOrig', 'nameDest'] # Features to drop for e
 RESULTS_DIR = os.path.join(PROJECT_ROOT, 'results')
 EVALUATION_METRICS_FILE = os.path.join(RESULTS_DIR, 'evaluation_metrics.json')
 CONFUSION_MATRIX_DIR = os.path.join(RESULTS_DIR, 'confusion_matrices')
+PREDICTIONS_DIR = os.path.join(RESULTS_DIR, 'predictions') # Path for saving prediction CSVs
 
 # --- Other ---
 RANDOM_SEED = 42 # For reproducibility
-TARGET_COLUMN = 'Fraud_Label' # Added for clarity, was implicitly 'isFraud' in some scripts
+TARGET_COLUMN = 'Fraud_Label'
 
 
 # Create directories if they don't exist
@@ -54,8 +55,10 @@ os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 os.makedirs(CONFUSION_MATRIX_DIR, exist_ok=True)
+os.makedirs(PREDICTIONS_DIR, exist_ok=True) # Ensure predictions directory is created
 
 print(f"Project Root: {PROJECT_ROOT}")
 print(f"Data Directory: {DATA_DIR}")
 print(f"Models Directory: {MODEL_DIR}")
 print(f"Results Directory: {RESULTS_DIR}")
+print(f"Predictions Directory: {PREDICTIONS_DIR}") # Added print for verification
