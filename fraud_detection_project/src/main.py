@@ -91,14 +91,16 @@ def run_pipeline(experiment_type='all_features', input_csv_path=None):
         "ANN": config.ANN_MODEL_PATH # Added ANN
     }
 
-    for model_name, model_path in models_to_evaluate.items():
+    for model_key, model_path in models_to_evaluate.items(): # Renamed model_name to model_key for clarity
         model = evaluate_models.load_model(model_path) # evaluate_models still loads the model file
         if model:
-            metrics = evaluate_models.evaluate_model(model, X_test, y_test, model_name) # Pass test data
+            full_model_name_for_eval = f"{model_key}_{experiment_type}"
+            # Pass the full_model_name_for_eval to evaluate_model and use it as the key for all_model_metrics
+            metrics = evaluate_models.evaluate_model(model, X_test, y_test, full_model_name_for_eval) # Pass full name
             if metrics:
-                all_model_metrics[f"{model_name}_{experiment_type}"] = metrics
+                all_model_metrics[full_model_name_for_eval] = metrics # Key is now full_model_name_for_eval
         else:
-            print(f"Skipping evaluation for {model_name} (experiment: {experiment_type}) as model could not be loaded.")
+            print(f"Skipping evaluation for {model_key} (experiment: {experiment_type}) as model could not be loaded.")
 
     if all_model_metrics:
         eval_file_path = config.EVALUATION_METRICS_FILE
