@@ -154,6 +154,44 @@ def evaluate_model(model, X_test, y_test, model_name):
         if hasattr(model, "predict_proba"):
             y_pred_proba = model.predict_proba(X_test)[:, 1] # Probability of positive class
 
+        # START of block to add
+        # Save predictions along with features and true labels
+        if isinstance(X_test, pd.DataFrame):
+            predictions_df = X_test.copy()
+        else:
+            # If X_test is not a DataFrame, create a new one. Requires feature names for columns.
+            # This part might need adjustment if X_test can be a numpy array without column info.
+            print("Warning: X_test is not a DataFrame. Predictions CSV will only contain labels and probabilities.")
+            predictions_df = pd.DataFrame()
+
+
+        # Ensure y_test is aligned if its index is different
+        predictions_df['true_label'] = y_test.values
+        predictions_df['predicted_label'] = y_pred # y_pred is from model.predict(X_test)
+        if y_pred_proba is not None:
+            predictions_df['predicted_probability_fraud'] = y_pred_proba
+        else:
+            predictions_df['predicted_probability_fraud'] = np.nan
+
+        # Construct filename and save
+        safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name.lower())
+        predictions_filename = f"predictions_{safe_model_name}.csv"
+
+        if hasattr(config, 'PREDICTIONS_DIR'):
+            predictions_filepath = os.path.join(config.PREDICTIONS_DIR, predictions_filename)
+
+            print(f"DEBUG_EVAL: config.PREDICTIONS_DIR is '{config.PREDICTIONS_DIR}'") # DEBUG
+            print(f"DEBUG_EVAL: Attempting to save predictions to: {predictions_filepath}") # DEBUG
+            try:
+                os.makedirs(config.PREDICTIONS_DIR, exist_ok=True)
+                predictions_df.to_csv(predictions_filepath, index=False)
+                print(f"DEBUG_EVAL: Successfully saved predictions for {model_name} to: {predictions_filepath}") # DEBUG
+            except Exception as e_save:
+                print(f"DEBUG_EVAL: FAILED to save predictions for {model_name}. Error: {e_save}") # DEBUG
+        else:
+            print(f"DEBUG_EVAL: Error - config.PREDICTIONS_DIR attribute not found in config object. Cannot save predictions for {model_name}.")
+        # END of block to add
+
         metrics = calculate_metrics(y_test, y_pred, y_pred_proba)
         if 'confusion_matrix' in metrics and isinstance(metrics['confusion_matrix'], list): # Use the list form
              # Convert list back to numpy array for plotting
