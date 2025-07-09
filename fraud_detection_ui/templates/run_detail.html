@@ -41,6 +41,12 @@
                 {% else %}
                     <p style="margin-top:15px;">No confusion matrix plot available for {{ result.model_name }}.</p>
                 {% endif %}
+
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="{{ url_for('download_filtered_predictions', run_id=run.id, model_key_from_db=result.model_name, prediction_type='fraudulent') }}" class="btn-download" style="margin-right: 10px;">Download Predicted Fraudulent</a>
+                    <a href="{{ url_for('download_filtered_predictions', run_id=run.id, model_key_from_db=result.model_name, prediction_type='legitimate') }}" class="btn-download">Download Predicted Legitimate</a>
+                </div>
+
             </div>
             {% endfor %}
         {% elif 'Success' in run.status_message %}

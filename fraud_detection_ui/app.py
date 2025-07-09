@@ -1,5 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory # Added send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, send_file # Added send_from_directory and send_file
 import os
+import pandas as pd # Added pandas
+import io # Added io
 from werkzeug.utils import secure_filename
 import subprocess
 import json # Added for reading metrics file
@@ -40,8 +42,20 @@ db = SQLAlchemy(app)
 APP_ROOT = os.path.dirname(os.path.abspath(__file__)) # Root of the UI app (fraud_detection_ui/)
 PROJECT_ROOT_DIR = os.path.dirname(APP_ROOT) # Root of the entire repository (parent of fraud_detection_ui/ and fraud_detection_project/)
 CONFUSION_MATRICES_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, 'fraud_detection_project', 'results', 'confusion_matrices'))
+PREDICTIONS_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, 'fraud_detection_project', 'results', 'predictions')) # Define PREDICTIONS_DIR
 
 app.secret_key = 'super secret key'
+
+
+# Helper function to generate safe filename parts (similar to backend)
+def get_safe_model_filename_part(model_key_from_db):
+    # model_key_from_db might be like "Random Forest_all_features"
+    # The prediction files are saved like "predictions_random_forest_all_features.csv"
+    # The evaluate_models.py uses: "".join(c if c.isalnum() else "_" for c in model_name.lower())
+    # We need to ensure consistency. The model_name used for saving predictions
+    # is the key from the models_to_evaluate dict in main.py, which becomes model_key in metrics_data.
+    # This model_key is what's stored in ModelResult.model_name.
+    return "".join(c if c.isalnum() else "_" for c in model_key_from_db.lower())
 
 # --- Database Models ---
 class PipelineRun(db.Model):
@@ -277,10 +291,11 @@ def upload_file():
                         flash(f'Error saving failure status to database: {str(e_db_fail)}', 'error')
 
                 # Cleanup before rendering results
+                current_run_id_for_template = new_run.id if new_run else None
                 if os.path.exists(file_path):
                     try: os.remove(file_path); print(f"Cleaned up uploaded file: {file_path}")
                     except Exception as e_cl: print(f"Error cleaning up file {file_path}: {e_cl}")
-                return render_template('results.html', metrics_data=metrics_data, error_message=error_message, stderr_details=stderr_details, filename=filename)
+                return render_template('results.html', metrics_data=metrics_data, error_message=error_message, stderr_details=stderr_details, filename=filename, current_run_id=current_run_id_for_template, prediction_files_info=prediction_files_info) # Added current_run_id and prediction_files_info
 
             except subprocess.TimeoutExpired:
                 error_message = f"Pipeline execution for {filename} timed out after 5 minutes."
@@ -460,6 +475,69 @@ def run_detail(run_id):
         print(f"DB Query Error for Run Detail (ID: {run_id}): {e}") # Server log
 
     return render_template('run_detail.html', run=pipeline_run_details)
+
+@app.route('/download_filtered_predictions/<int:run_id>/<path:model_key_from_db>/<string:prediction_type>')
+def download_filtered_predictions(run_id, model_key_from_db, prediction_type):
+    run = db.session.query(PipelineRun).filter_by(id=run_id).first()
+    if not run:
+        flash(f"Pipeline Run ID {run_id} not found.", "error")
+        return redirect(request.referrer or url_for('history'))
+
+    if prediction_type not in ["fraudulent", "legitimate"]:
+        flash("Invalid prediction type specified for download.", "error")
+        return redirect(request.referrer or url_for('run_detail', run_id=run_id))
+
+    # model_key_from_db is like "Random Forest_all_features" from ModelResult.model_name
+    safe_model_name_part = get_safe_model_filename_part(model_key_from_db)
+    base_prediction_filename = f"predictions_{safe_model_name_part}.csv"
+    base_prediction_filepath = os.path.join(PREDICTIONS_DIR, base_prediction_filename)
+
+    if not os.path.exists(base_prediction_filepath):
+        flash(f"Base prediction file '{base_prediction_filename}' not found for this model and run. Path checked: {base_prediction_filepath}", "error")
+        print(f"Error: Prediction file not found at {base_prediction_filepath}")
+        return redirect(request.referrer or url_for('run_detail', run_id=run_id))
+
+    try:
+        df = pd.read_csv(base_prediction_filepath)
+    except Exception as e:
+        flash(f"Error reading prediction file: {str(e)}", "error")
+        print(f"Error reading CSV {base_prediction_filepath}: {e}")
+        return redirect(request.referrer or url_for('run_detail', run_id=run_id))
+
+    if 'predicted_label' not in df.columns:
+        flash("Prediction file is missing the 'predicted_label' column.", "error")
+        print(f"Error: 'predicted_label' column not found in {base_prediction_filepath}")
+        return redirect(request.referrer or url_for('run_detail', run_id=run_id))
+
+    if prediction_type == "fraudulent":
+        # Assuming fraud is 1, legitimate is 0
+        filtered_df = df[df['predicted_label'] == 1].copy() # Use .copy() to avoid SettingWithCopyWarning on potential later modifications
+        output_filename = f"run_{run_id}_{safe_model_name_part}_predicted_fraudulent.csv"
+    else: # legitimate
+        filtered_df = df[df['predicted_label'] == 0].copy()
+        output_filename = f"run_{run_id}_{safe_model_name_part}_predicted_legitimate.csv"
+
+    if filtered_df.empty:
+        flash(f"No {prediction_type} transactions found for model '{model_key_from_db}'. An empty file will be downloaded.", "info")
+        # Still allow downloading an empty file with headers.
+
+    # Create an in-memory CSV
+    csv_buffer = io.StringIO()
+    filtered_df.to_csv(csv_buffer, index=False)
+    csv_buffer.seek(0) # Rewind buffer to the beginning
+
+    # It's better to use BytesIO for send_file as it expects bytes
+    mem_file = io.BytesIO()
+    mem_file.write(csv_buffer.getvalue().encode('utf-8'))
+    mem_file.seek(0) # Rewind BytesIO object to the beginning
+    csv_buffer.close() # Close StringIO buffer
+
+    return send_file(
+        mem_file,
+        as_attachment=True,
+        download_name=output_filename,
+        mimetype='text/csv'
+    )
 
 if __name__ == '__main__':
     with app.app_context():
