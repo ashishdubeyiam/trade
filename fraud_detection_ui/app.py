@@ -31,7 +31,8 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 
 # Check if an environment variable is set for the DB URI, otherwise use a placeholder/default.
 # This placeholder will NOT work and needs to be configured by the user.
-db_uri = os.environ.get('DATABASE_URL', 'mssql+pyodbc://USER:PASSWORD@SERVER/DATABASE_NAME?driver=ODBC+Driver+17+for+SQL+Server')
+# Defaulting to a Windows Authentication pattern. User must replace SERVER and DATABASE_NAME.
+db_uri = os.environ.get('DATABASE_URL', 'mssql+pyodbc://SERVER/DATABASE_NAME?driver=ODBC+Driver+17+for+SQL+Server&Trusted_Connection=yes')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Suppress a warning
@@ -366,13 +367,14 @@ def dashboard():
         'failed_runs': 0,
         'last_run_status': None,
         'last_run_filename': None,
-        'last_run_timestamp': None
+        'last_run_timestamp': None,
+        'latest_run_id_for_downloads': None, # Added to pass to template
+        'latest_run_model_name_for_downloads': None # Added to pass to template
     }
     recent_runs_query = []
-    latest_run_chart_filename = None # Changed from path to filename
+    latest_run_chart_filename = None
 
     try:
-        # Query for summary statistics
         summary_stats['total_runs'] = db.session.query(PipelineRun).count()
         summary_stats['successful_runs'] = db.session.query(PipelineRun).filter(PipelineRun.status_message.ilike('Success%')).count()
         summary_stats['failed_runs'] = summary_stats['total_runs'] - summary_stats['successful_runs']
@@ -383,58 +385,45 @@ def dashboard():
             summary_stats['last_run_filename'] = last_run.original_filename
             summary_stats['last_run_timestamp'] = last_run.upload_timestamp
 
-        # Query for recent runs (e.g., last 5)
         recent_runs_query = db.session.query(PipelineRun).order_by(desc(PipelineRun.upload_timestamp)).limit(5).all()
 
-        # Placeholder for chart generation logic (to be implemented in a later step)
-        # For now, latest_run_chart_path remains None.
-        # In a future step, we would query ModelResult for the last_run.id,
-        # generate a chart image, save it, and set a path or filename here.
-        # e.g., if a chart 'latest_run_f1_scores.png' was saved in a known static/image path:
-        # latest_run_chart_path = url_for('static', filename='images/latest_run_f1_scores.png') # Example if served from UI's static
-        # Or if served via serve_generated_image:
-        # latest_run_chart_path = url_for('serve_generated_image', filename='latest_run_f1_scores.png')
-
-        # Generate chart for the latest successful run and get prediction counts
         latest_successful_run = db.session.query(PipelineRun).filter(PipelineRun.status_message.ilike('Success%')).order_by(desc(PipelineRun.upload_timestamp)).first()
 
-        # Initialize new summary stats for prediction counts
         summary_stats['latest_run_predicted_fraud'] = 'N/A'
         summary_stats['latest_run_predicted_legit'] = 'N/A'
         summary_stats['latest_run_model_for_counts'] = 'N/A'
 
         if latest_successful_run:
+            summary_stats['latest_run_id_for_downloads'] = latest_successful_run.id # Store run ID for download links
+
             model_results_for_latest_run = db.session.query(ModelResult).filter(ModelResult.pipeline_run_id == latest_successful_run.id).all()
             if model_results_for_latest_run:
                 latest_run_chart_filename = generate_performance_chart(latest_successful_run.id, model_results_for_latest_run)
-
-                # Try to find Random Forest results, otherwise use the first model's results for prediction counts
                 chosen_model_result = None
                 for res in model_results_for_latest_run:
                     if "Random Forest" in res.model_name:
                         chosen_model_result = res
                         break
                 if not chosen_model_result and model_results_for_latest_run:
-                    chosen_model_result = model_results_for_latest_run[0] # Fallback to the first model
+                    chosen_model_result = model_results_for_latest_run[0]
 
                 if chosen_model_result:
                     summary_stats['latest_run_model_for_counts'] = chosen_model_result.model_name
+                    summary_stats['latest_run_model_name_for_downloads'] = chosen_model_result.model_name # Store model name for download links
                     tp = chosen_model_result.tp if chosen_model_result.tp is not None else 0
                     fp = chosen_model_result.fp if chosen_model_result.fp is not None else 0
                     tn = chosen_model_result.tn if chosen_model_result.tn is not None else 0
                     fn = chosen_model_result.fn if chosen_model_result.fn is not None else 0
-
                     summary_stats['latest_run_predicted_fraud'] = tp + fp
                     summary_stats['latest_run_predicted_legit'] = tn + fn
-
     except Exception as e:
         flash(f"Error querying database for dashboard data: {str(e)}", "error")
-        print(f"DB Query Error for Dashboard: {e}") # Server log
+        print(f"DB Query Error for Dashboard: {e}")
 
     return render_template('dashboard.html',
                            summary_stats=summary_stats,
                            recent_runs=recent_runs_query,
-                           latest_run_chart_filename=latest_run_chart_filename) # Pass filename
+                           latest_run_chart_filename=latest_run_chart_filename)
 
 @app.route('/generated_images/<path:filename>')
 def serve_generated_image(filename):

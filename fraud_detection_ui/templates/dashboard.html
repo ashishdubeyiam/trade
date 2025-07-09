@@ -33,10 +33,23 @@
             </div>
             <div class="stat-item" style="text-align: center;">
                 <h3>Latest Run Prediction Summary</h3>
-                {% if summary_stats.latest_run_model_for_counts != 'N/A' %}
+                {% if summary_stats.latest_run_model_for_counts != 'N/A' and summary_stats.latest_run_id_for_downloads and summary_stats.latest_run_model_name_for_downloads %}
+                    <p style="font-size: 12px; margin-bottom: 5px;">(Based on model: {{ summary_stats.latest_run_model_for_counts }})</p>
+                    <p>Predicted Fraudulent:
+                        <a href="{{ url_for('download_filtered_predictions', run_id=summary_stats.latest_run_id_for_downloads, model_key_from_db=summary_stats.latest_run_model_name_for_downloads, prediction_type='fraudulent') }}" title="Download fraudulent predictions">
+                            <strong style="font-size: 18px;">{{ summary_stats.latest_run_predicted_fraud }}</strong>
+                        </a>
+                    </p>
+                    <p>Predicted Legitimate:
+                        <a href="{{ url_for('download_filtered_predictions', run_id=summary_stats.latest_run_id_for_downloads, model_key_from_db=summary_stats.latest_run_model_name_for_downloads, prediction_type='legitimate') }}" title="Download legitimate predictions">
+                            <strong style="font-size: 18px;">{{ summary_stats.latest_run_predicted_legit }}</strong>
+                        </a>
+                    </p>
+                {% elif summary_stats.latest_run_model_for_counts != 'N/A' %} {# Case where counts are available but maybe not link params #}
                     <p style="font-size: 12px; margin-bottom: 5px;">(Based on model: {{ summary_stats.latest_run_model_for_counts }})</p>
                     <p>Predicted Fraudulent: <strong style="font-size: 18px;">{{ summary_stats.latest_run_predicted_fraud }}</strong></p>
                     <p>Predicted Legitimate: <strong style="font-size: 18px;">{{ summary_stats.latest_run_predicted_legit }}</strong></p>
+                    <p><small>(Download links unavailable)</small></p>
                 {% else %}
                     <p>No prediction summary available for the latest run.</p>
                 {% endif %}
