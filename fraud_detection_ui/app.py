@@ -44,6 +44,10 @@ PROJECT_ROOT_DIR = os.path.dirname(APP_ROOT) # Root of the entire repository (pa
 CONFUSION_MATRICES_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, 'fraud_detection_project', 'results', 'confusion_matrices'))
 PREDICTIONS_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, 'fraud_detection_project', 'results', 'predictions')) # Define PREDICTIONS_DIR
 
+print(f"DEBUG: APP_ROOT (app.py): {APP_ROOT}")
+print(f"DEBUG: PROJECT_ROOT_DIR (app.py): {PROJECT_ROOT_DIR}")
+print(f"DEBUG: PREDICTIONS_DIR (app.py global): {PREDICTIONS_DIR}")
+
 app.secret_key = 'super secret key'
 
 
