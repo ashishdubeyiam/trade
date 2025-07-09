@@ -154,6 +154,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    prediction_files_info = [] # Initialize here
     if request.method == 'POST':
         if 'datafile' not in request.files:
             flash('No file part in the request.', 'error')
@@ -308,10 +309,12 @@ def upload_file():
                     db.session.rollback()
                     flash(f'Error saving timeout status to database: {str(e_db_timeout)}', 'error')
 
+                current_run_id_for_template = None # No successful run ID here
+                stderr_details_for_template = None # No stderr from process here
                 if os.path.exists(file_path):
                     try: os.remove(file_path); print(f"Cleaned up uploaded file after timeout: {file_path}")
                     except Exception as e_cl: print(f"Error cleaning up file {file_path} after timeout: {e_cl}")
-                return render_template('results.html', error_message=error_message, filename=filename)
+                return render_template('results.html', error_message=error_message, filename=filename, prediction_files_info=prediction_files_info, current_run_id=current_run_id_for_template, stderr_details=stderr_details_for_template)
 
             except Exception as e: # Catch other exceptions during subprocess phase
                 error_message = f"An error occurred while trying to run the pipeline: {str(e)}"
@@ -324,10 +327,12 @@ def upload_file():
                     db.session.rollback()
                     flash(f'Error saving exception status to database: {str(e_db_exc)}', 'error')
 
+                current_run_id_for_template = None # No successful run ID here
+                stderr_details_for_template = str(e) # Capture the exception as details
                 if os.path.exists(file_path):
                     try: os.remove(file_path); print(f"Cleaned up uploaded file after exception: {file_path}")
                     except Exception as e_cl: print(f"Error cleaning up file {file_path} after exception: {e_cl}")
-                return render_template('results.html', error_message=error_message, filename=filename)
+                return render_template('results.html', error_message=error_message, filename=filename, prediction_files_info=prediction_files_info, current_run_id=current_run_id_for_template, stderr_details=stderr_details_for_template)
 
             # Note: The following cleanup lines are now effectively handled above,
             # as each path leading to render_template('results.html') now includes cleanup.
