@@ -62,31 +62,35 @@ if __name__ == '__main__':
     n = int(input())
     items = []
     for _ in range(n):
-        item_name, category, brand, batch, item_code, price = input().split(',')
+        line = input().replace("'", "")
+        item_name, category, brand, batch, item_code, price = line.split(',')
         items.append(Item(item_name, category, brand, batch, int(item_code), int(price)))
 
-    shop_name, shop_address, _ = input().split(',')
+    shop_name, shop_address, _ = input().replace("'", "").split(',')
     shop = Shop(shop_name, shop_address, items)
 
-    item_name, category, brand, batch, item_code, price = input().split(',')
+    line = input().replace("'", "")
+    item_name, category, brand, batch, item_code, price = line.split(',')
     shop.add_product(Item(item_name, category, brand, batch, int(item_code), int(price)))
 
     print("Item name Category Brand item_code Price Batch")
     for item in shop.item_list:
-        print(f"{item.item_name} {item.category} {item.brand} {item.price} {item.item_code} {item.batch}")
+        print(f"'{item.item_name}' '{item.category}' '{item.brand}' {item.price} {item.item_code} '{item.batch}'")
 
-    category, count = input().split(',')
+    category, count = input().replace("'", "").split(',')
     stock = shop.stock_details(category, int(count))
 
-    item_name, item_code, batch = input().split(',')
+    line = input().replace("'", "")
+    item_name, item_code, batch = line.split(',')
     shop.remove_product(item_name, int(item_code), batch)
 
-    item_name, item_code, batch = input().split(',')
+    line = input().replace("'", "")
+    item_name, item_code, batch = line.split(',')
     shop.add_defect_product(item_name, int(item_code), batch)
 
-    date = input()
+    date = input().replace("'", "")
     shop.defect_stock_remove(date)
 
     sorted_items = shop.sort_items_by_price()
     for item in sorted_items:
-        print(item.return_item_details())
+        print(f"Item_name : '{item.item_name}' , category : '{item.category}' , brand : '{item.brand}' , item_code : {item.item_code} , batch : '{item.batch}' , price : {item.price}")
