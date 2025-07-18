@@ -1,9 +1,0 @@
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-joblib
-Flask
-Flask-SQLAlchemy
-pyodbc
