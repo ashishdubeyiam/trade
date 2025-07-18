@@ -66,22 +66,33 @@ if __name__ == '__main__':
     print("Item name Category Brand item_code Price Batch")
     for item in shop.item_list:
         print(f"'{item.item_name}' '{item.category}' '{item.brand}' {item.price} {item.item_code} '{item.batch}'")
+    print("---")
 
     category, count = input().replace("'", "").split(',')
+    print(f"Category: {category}, Count: {count}")
     stock = shop.stock_details(category, int(count))
+    print(f"Stock: {[item.item_name for item in stock]}")
 
     line = input().replace("'", "")
     item_name, item_code, batch = line.split(',')
+    print(f"Removing: {item_name}, {item_code}, {batch}")
     shop.remove_product(item_name, int(item_code), batch)
+    print(f"Items after removal: {[item.item_name for item in shop.item_list]}")
 
     line = input().replace("'", "")
     item_name, item_code, batch = line.split(',')
+    print(f"Adding to defect: {item_name}, {item_code}, {batch}")
     shop.add_defect_product(item_name, int(item_code), batch)
-
+    print(f"Items after adding to defect: {[item.item_name for item in shop.item_list]}")
+    print(f"Defect items: {[item.item_name for item in shop.defect_items]}")
 
     date = input().replace("'", "")
+    print(f"Defect stock removal date: {date}")
     shop.defect_stock_remove(date)
+    print(f"Defect items after removal: {[item.item_name for item in shop.defect_items]}")
+    print(f"Defect removed data: {shop.defect_removed_data}")
 
     sorted_items = shop.sort_items_by_price()
+    print("---")
     for item in sorted_items:
         print(item.return_item_details())
