@@ -1,0 +1,17 @@
+10
+'Pencil','Stationary','ABC','0123',1213,30
+'Pencil','Stationary','ABC','0123',1214,30
+'Pencil','Stationary','ABC','0123',1215,30
+'Pencil','Stationary','ABC','0123',1216,30
+'Pencil','Stationary','ABC','0123',1217,30
+'Pen','Stationary','BCD','0124',1001,50
+'Pen','Stationary','BCD','0124',1002,50
+'Pen','Stationary','BCD','0124',1003,50
+'Smartphone','Electronics','XYZ','0001',603,9000
+'Smartphone','Electronics','XYZ','0003',604,10000
+'ABC','Square Plaza',items
+'Mobile Charger','Electronics','ASP','0124',112,500
+'Stationary',2
+'Pencil',1214,'0123'
+'Pencil',1215,'0123'
+'2020/22/22'
