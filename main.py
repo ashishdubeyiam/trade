@@ -56,8 +56,9 @@ if __name__ == '__main__':
     item_name, category, brand, batch, item_code, price = input().split(',')
     shop.add_product(Item(item_name, category, brand, batch, int(item_code), int(price)))
 
+    print("Item name Category Brand item_code Price Batch")
     for item in shop.item_list:
-        print(f"Item name {item.item_name} Category {item.category} Brand {item.brand} item_code {item.item_code} Price {item.price} Batch {item.batch}")
+        print(f"{item.item_name} {item.category} {item.brand} {item.price} {item.item_code} {item.batch}")
 
     category, count = input().split(',')
     stock = shop.stock_details(category, int(count))
