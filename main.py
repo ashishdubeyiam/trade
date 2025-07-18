@@ -8,7 +8,7 @@ class Item:
         self.price = price
 
     def return_item_details(self):
-        return f"Item_name : '{self.item_name}' , category : '{self.category}' , brand : '{self.brand}' , item_code : {self.item_code} , batch : '{self.batch}' , price : {self.price}"
+        return f"Item_name : {self.item_name} , category : {self.category} , brand : {self.brand} , item_code : {self.item_code} , batch : {self.batch} , price : {self.price}"
 
 class Shop:
     def __init__(self, shop_name, shop_address, item_list):
@@ -23,7 +23,12 @@ class Shop:
 
     def stock_details(self, category, count):
         category_items = [item for item in self.item_list if item.category == category]
-        return [item for item in category_items if category_items.count(item) > count]
+
+        counts = {}
+        for item in category_items:
+            counts[item.item_name] = counts.get(item.item_name, 0) + 1
+
+        return [item for item in category_items if counts[item.item_name] > count]
 
 
     def remove_product(self, item_name, item_code, batch):
