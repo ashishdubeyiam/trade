@@ -46,7 +46,7 @@ class Shop:
         self.defect_items = []
 
     def sort_items_by_price(self):
-        return sorted(self.item_list, key=lambda item: item.price)
+        return sorted(self.item_list, key=lambda item: (item.price, item.item_name))
 
 if __name__ == '__main__':
     n = int(input())
