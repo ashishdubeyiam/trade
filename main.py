@@ -8,7 +8,7 @@ class Item:
         self.price = price
 
     def return_item_details(self):
-        return f"Item_name : {self.item_name} , category : {self.category} , brand : {self.brand} , item_code : {self.item_code} , batch : {self.batch} , price : {self.price}"
+        return f"Item_name : '{self.item_name}' , category : '{self.category}' , brand : '{self.brand}' , item_code : {self.item_code} , batch : '{self.batch}' , price : {self.price}"
 
 class Shop:
     def __init__(self, shop_name, shop_address, item_list):
@@ -32,21 +32,30 @@ class Shop:
 
 
     def remove_product(self, item_name, item_code, batch):
-        self.item_list = [item for item in self.item_list if not (item.item_name == item_name and item.item_code == item_code and item.batch == batch)]
-
-    def add_defect_product(self, item_name, item_code, batch):
+        item_to_remove = None
         for item in self.item_list:
             if item.item_name == item_name and item.item_code == item_code and item.batch == batch:
-                self.defect_items.append(item)
-                self.item_list.remove(item)
+                item_to_remove = item
                 break
+        if item_to_remove:
+            self.item_list.remove(item_to_remove)
+
+    def add_defect_product(self, item_name, item_code, batch):
+        item_to_move = None
+        for item in self.item_list:
+            if item.item_name == item_name and item.item_code == item_code and item.batch == batch:
+                item_to_move = item
+                break
+        if item_to_move:
+            self.defect_items.append(item_to_move)
+            self.item_list.remove(item_to_move)
 
     def defect_stock_remove(self, date):
         self.defect_removed_data[date] = self.defect_items
         self.defect_items = []
 
     def sort_items_by_price(self):
-        return sorted(self.item_list, key=lambda item: item.price)
+        return sorted(self.item_list, key=lambda item: (item.price, item.item_name))
 
 if __name__ == '__main__':
     n = int(input())
@@ -78,9 +87,11 @@ if __name__ == '__main__':
     item_name, item_code, batch = line.split(',')
     shop.add_defect_product(item_name, int(item_code), batch)
 
+    shop.item_list = stock
+
     date = input().replace("'", "")
     shop.defect_stock_remove(date)
 
     sorted_items = shop.sort_items_by_price()
     for item in sorted_items:
-        print(f"Item_name : '{item.item_name}' , category : '{item.category}' , brand : '{item.brand}' , item_code : {item.item_code} , batch : '{item.batch}' , price : {item.price}")
+        print(item.return_item_details())
