@@ -22,13 +22,14 @@ class Shop:
         self.item_list.append(item)
 
     def stock_details(self, category, count):
-        category_items = [item for item in self.item_list if item.category == category]
 
         counts = {}
-        for item in category_items:
-            counts[item.item_name] = counts.get(item.item_name, 0) + 1
+        for item in self.item_list:
+            if item.category == category:
+                counts[item.item_name] = counts.get(item.item_name, 0) + 1
 
-        return [item for item in category_items if counts[item.item_name] > count]
+
+        return [item for item in self.item_list if item.category == category and counts.get(item.item_name, 0) > count]
 
 
     def remove_product(self, item_name, item_code, batch):
@@ -87,7 +88,6 @@ if __name__ == '__main__':
     item_name, item_code, batch = line.split(',')
     shop.add_defect_product(item_name, int(item_code), batch)
 
-    shop.item_list = stock
 
     date = input().replace("'", "")
     shop.defect_stock_remove(date)
